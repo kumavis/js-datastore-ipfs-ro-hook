@@ -5,6 +5,16 @@
 
 const ipfsAPI = require('ipfs-api')
 const parallel = require('async/parallel')
+const CID = require('cids')
+const base32 = require('base32.js')
+
+function dsKeyToCid(key) {
+  const decoder = new base32.Decoder()
+  const rawKey = key.toString().slice(1)
+  const buf = decoder.write(rawKey).finalize()
+  const cid = new CID(buf)
+  return cid
+}
 
 /**
  * A datastore backed by an ipfs client accessed via the ipfs http api.
@@ -12,7 +22,7 @@ const parallel = require('async/parallel')
 
 class IpfsHttpApiDatastore {
   constructor (opts) {
-    this.ipfs = ipfsAPI('/ip4/127.0.0.1/tcp/5001')
+    this.ipfs = ipfsAPI(opts)
   }
 
   open (callback) {
@@ -20,15 +30,26 @@ class IpfsHttpApiDatastore {
   }
 
   put (key /* : Key */, value /* : Buffer */, callback /* : Callback<void> */) /* : void */ {
-    this.ipfs.block.put(value, key, callback)
+    const cid = dsKeyToCid(key)
+    const cidString = cid.toBaseEncodedString()
+    this.ipfs.block.put(value, cidString, callback)
   }
 
   get (key /* : Key */, callback /* : Callback<Buffer> */) /* : void */ {
-    this.ipfs.block.get(key, callback)
+    const cid = dsKeyToCid(key)
+    // use cidString until this is resolved
+    // https://github.com/ipfs/js-ipfs-api/pull/550
+    const cidString = cid.toBaseEncodedString()
+    this.ipfs.block.get(cidString, (err, block) => {
+      if (err) return callback(err)
+      callback(null, block.data)
+    })
   }
 
   has (key /* : Key */, callback /* : Callback<bool> */) /* : void */ {
-    this.ipfs.block.get(key, (err, res) => {
+    const cid = dsKeyToCid(key)
+    const cidString = cid.toBaseEncodedString()
+    this.ipfs.block.get(cidString, (err, res) => {
       if (err) {
         callback(null, false)
         return
