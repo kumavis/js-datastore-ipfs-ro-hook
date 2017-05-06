@@ -3,54 +3,34 @@
 
 /* :: import type {Callback, Batch, Query, QueryResult, QueryEntry} from 'interface-datastore' */
 
-const pull = require('pull-stream')
-const levelup = require('levelup')
-
-const asyncFilter = require('interface-datastore').utils.asyncFilter
-const asyncSort = require('interface-datastore').utils.asyncSort
-const Key = require('interface-datastore').Key
+const ipfsAPI = require('ipfs-api')
+const parallel = require('async/parallel')
 
 /**
- * A datastore backed by leveldb.
+ * A datastore backed by an ipfs client accessed via the ipfs http api.
  */
-/* :: export type LevelOptions = {
-  createIfMissing?: bool,
-  errorIfExists?: bool,
-  compression?: bool,
-  cacheSize?: number,
-  db?: Object
-} */
-class LevelDatastore {
-  /* :: db: levelup */
 
-  constructor (path /* : string */, opts /* : ?LevelOptions */) {
-    this.db = levelup(path, Object.assign({}, {
-      compression: false // same default as go
-    }, opts, {
-      valueEncoding: 'binary'
-    }))
+class IpfsHttpApiDatastore {
+  constructor (opts) {
+    this.ipfs = ipfsAPI('/ip4/127.0.0.1/tcp/5001')
   }
 
-  open (callback /* : Callback<void> */) /* : void */ {
-    this.db.open(callback)
+  open (callback) {
+    setTimeout(callback)
   }
 
   put (key /* : Key */, value /* : Buffer */, callback /* : Callback<void> */) /* : void */ {
-    this.db.put(key.toString(), value, callback)
+    this.ipfs.block.put(value, key, callback)
   }
 
   get (key /* : Key */, callback /* : Callback<Buffer> */) /* : void */ {
-    this.db.get(key.toString(), callback)
+    this.ipfs.block.get(key, callback)
   }
 
   has (key /* : Key */, callback /* : Callback<bool> */) /* : void */ {
-    this.db.get(key.toString(), (err, res) => {
+    this.ipfs.block.get(key, (err, res) => {
       if (err) {
-        if (err.notFound) {
-          callback(null, false)
-          return
-        }
-        callback(err)
+        callback(null, false)
         return
       }
 
@@ -59,107 +39,32 @@ class LevelDatastore {
   }
 
   delete (key /* : Key */, callback /* : Callback<void> */) /* : void */ {
-    this.db.del(key.toString(), callback)
+    setTimeout(callback)
   }
 
   close (callback /* : Callback<void> */) /* : void */ {
-    this.db.close(callback)
+    setTimeout(callback)
   }
 
   batch () /* : Batch<Buffer> */ {
     const ops = []
+    const self = this
     return {
       put: (key /* : Key */, value /* : Buffer */) /* : void */ => {
-        ops.push({
-          type: 'put',
-          key: key.toString(),
-          value: value
-        })
+        ops.push((callback) => self.put(key, value, callback))
       },
       delete: (key /* : Key */) /* : void */ => {
-        ops.push({
-          type: 'del',
-          key: key.toString()
-        })
+        ops.push((callback) => self.delete(key, callback))
       },
       commit: (callback /* : Callback<void> */) /* : void */ => {
-        this.db.batch(ops, callback)
+        parallel(ops, callback)
       }
     }
   }
 
   query (q /* : Query<Buffer> */) /* : QueryResult<Buffer> */ {
-    let values = true
-    if (q.keysOnly != null) {
-      values = !q.keysOnly
-    }
-
-    const iter = this.db.db.iterator({
-      keys: true,
-      values: values,
-      keyAsBuffer: true
-    })
-
-    const rawStream = (end, cb) => {
-      if (end) {
-        return iter.end((err) => {
-          cb(err || end)
-        })
-      }
-
-      iter.next((err, key, value) => {
-        if (err) {
-          return cb(err)
-        }
-
-        if (err == null && key == null && value == null) {
-          return iter.end((err) => {
-            cb(err || true)
-          })
-        }
-
-        const res /* : QueryEntry<Buffer> */ = {
-          key: new Key(key, false)
-        }
-
-        if (values) {
-          res.value = new Buffer(value)
-        }
-
-        cb(null, res)
-      })
-    }
-
-    let tasks = [rawStream]
-    let filters = []
-
-    if (q.prefix != null) {
-      const prefix = q.prefix
-      filters.push((e, cb) => cb(null, e.key.toString().startsWith(prefix)))
-    }
-
-    if (q.filters != null) {
-      filters = filters.concat(q.filters)
-    }
-
-    tasks = tasks.concat(filters.map(f => asyncFilter(f)))
-
-    if (q.orders != null) {
-      tasks = tasks.concat(q.orders.map(o => asyncSort(o)))
-    }
-
-    if (q.offset != null) {
-      let i = 0
-      // $FlowFixMe
-      tasks.push(pull.filter(() => i++ >= q.offset))
-    }
-
-    if (q.limit != null) {
-      tasks.push(pull.take(q.limit))
-    }
-
-    return pull.apply(null, tasks)
+    throw new Error('IpfsHttpApiDatastore - "query" method not supported')
   }
 }
 
-module.exports = LevelDatastore
+module.exports = IpfsHttpApiDatastore
