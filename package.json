@@ -17,10 +17,6 @@
     "coverage-publish": "aegir-coverage publish",
     "docs": "aegir-docs"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ipfs/js-datastore-level.git"
-  },
   "keywords": [
     "interface",
     "key-value",
@@ -32,10 +28,6 @@
   ],
   "author": "kumavis",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/ipfs/js-datastore-level/issues"
-  },
-  "homepage": "https://github.com/ipfs/js-datastore-level#readme",
   "dependencies": {
     "async": "^2.4.0",
     "datastore-core": "^0.1.0",
@@ -56,5 +48,16 @@
   "contributors": [
     "David Dias <daviddias.p@gmail.com>",
     "Friedel Ziegelmayer <dignifiedquire@gmail.com>"
-  ]
+  ],
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kumavis/js-datastore-ipfs-http-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kumavis/js-datastore-ipfs-http-api/issues"
+  },
+  "homepage": "https://github.com/kumavis/js-datastore-ipfs-http-api#readme"
 }
