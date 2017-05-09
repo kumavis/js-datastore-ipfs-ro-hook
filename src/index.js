@@ -3,7 +3,6 @@
 
 /* :: import type {Callback, Batch, Query, QueryResult, QueryEntry} from 'interface-datastore' */
 
-const ipfsAPI = require('ipfs-api')
 const parallel = require('async/parallel')
 const CID = require('cids')
 const base32 = require('base32.js')
@@ -20,9 +19,9 @@ function dsKeyToCid(key) {
  * A datastore backed by an ipfs client accessed via the ipfs http api.
  */
 
-class IpfsHttpApiDatastore {
-  constructor (opts) {
-    this.ipfs = ipfsAPI(opts)
+class IpfsReadOnlyHookedDatastore {
+  constructor (getHandler) {
+    this.handler = getHandler
   }
 
   open (callback) {
@@ -30,26 +29,16 @@ class IpfsHttpApiDatastore {
   }
 
   put (key /* : Key */, value /* : Buffer */, callback /* : Callback<void> */) /* : void */ {
-    const cid = dsKeyToCid(key)
-    const cidString = cid.toBaseEncodedString()
-    this.ipfs.block.put(value, cidString, callback)
+    setTimeout(callback)
   }
 
   get (key /* : Key */, callback /* : Callback<Buffer> */) /* : void */ {
     const cid = dsKeyToCid(key)
-    // use cidString until this is resolved
-    // https://github.com/ipfs/js-ipfs-api/pull/550
-    const cidString = cid.toBaseEncodedString()
-    this.ipfs.block.get(cidString, (err, block) => {
-      if (err) return callback(err)
-      callback(null, block.data)
-    })
+    this.handler(cid, callback)
   }
 
   has (key /* : Key */, callback /* : Callback<bool> */) /* : void */ {
-    const cid = dsKeyToCid(key)
-    const cidString = cid.toBaseEncodedString()
-    this.ipfs.block.get(cidString, (err, res) => {
+    this.get(key, (err) => {
       if (err) {
         callback(null, false)
         return
@@ -84,8 +73,8 @@ class IpfsHttpApiDatastore {
   }
 
   query (q /* : Query<Buffer> */) /* : QueryResult<Buffer> */ {
-    throw new Error('IpfsHttpApiDatastore - "query" method not supported')
+    throw new Error('IpfsReadOnlyHookedDatastore - "query" method not supported')
   }
 }
 
-module.exports = IpfsHttpApiDatastore
+module.exports = IpfsReadOnlyHookedDatastore
