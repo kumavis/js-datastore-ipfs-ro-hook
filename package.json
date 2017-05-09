@@ -1,7 +1,7 @@
 {
-  "name": "datastore-ipfs-http-api",
-  "version": "1.0.1",
-  "description": "Datastore implementation with level(up|down) backend",
+  "name": "datastore-ipfs-ro-hook",
+  "version": "1.0.0",
+  "description": "Datastore implementation with a custom read-only hook",
   "main": "src/index.js",
   "scripts": {
     "lint": "aegir-lint",
