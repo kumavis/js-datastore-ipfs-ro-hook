@@ -1,6 +1,6 @@
 {
   "name": "datastore-ipfs-ro-hook",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Datastore implementation with a custom read-only hook",
   "main": "src/index.js",
   "scripts": {
@@ -34,7 +34,6 @@
     "cids": "^0.4.2",
     "datastore-core": "^0.1.0",
     "interface-datastore": "^0.1.1",
-    "ipfs-api": "github:ipfs/js-ipfs-api#http-method-patch1",
     "pull-stream": "^3.5.0"
   },
   "devDependencies": {
